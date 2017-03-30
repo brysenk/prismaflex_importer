@@ -5,13 +5,13 @@ Created on Wed Mar 15 09:14:27 2017
 
 @author: brysenkeith
 """
-
+#%%
 #import all .txt files from prismaflex data
 import glob
 
-list_of_E = glob.glob('*E.TXT')
-list_of_P = glob.glob('*P.TXT')
-list_of_S = glob.glob('*S.TXT')
+list_of_E = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*E.TXT')
+list_of_P = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*P.TXT')
+list_of_S = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*S.TXT')
 
 
 import psycopg2
@@ -20,7 +20,7 @@ import sys
 db = None
 try:
     print "Trying to connect to database"
-    db = psycopg2.connect("dbname='crrt' user='postgres' host='localhost' host='/tmp/' password='keith1968'")
+    db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
     print "Connected to database"
     cur = db.cursor()
     print "cursor success"
@@ -43,25 +43,32 @@ finally:
     
     if db:
         db.close()
-        
+ #%%      
 #Load pressures into database        
 #need to strip spaces out of columns (strip out white space)
 try:
     lines = open(list_of_P[0], 'rb')
     readlines = lines.readlines()
+    #typesl = [x.lstrip() for x in readlines] 
     types = [line.split(";") for line in readlines]
     pressure_data = types[6:]
     indexl = [s[0] for s in pressure_data]
     timel = [s[1] for s in pressure_data]
     accesspl = [s[2] for s in pressure_data]
+    accesspl = [s.strip() for s in accesspl]
     filterpl = [s[3] for s in pressure_data]
+    filterpl = [s.strip() for s in filterpl]
     efflpl = [s[4] for s in pressure_data]
+    efflpl = [s.strip() for s in efflpl]
     returnpl = [s[5] for s in pressure_data]
+    returnpl = [s.strip() for s in returnpl]
     arpspl = [s[6] for s in pressure_data]
+    arpspl = [s.strip() for s in arpspl]
     db = None
-    db = psycopg2.connect("dbname='crrt' user='postgres' host='localhost' host='/tmp/' password='keith1968'")
+    db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
     cur = db.cursor()        
-    cur.execute("INSERT INTO pressures (index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%s, %s, %s, %s, %s, %s, %s);", (indexl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
+    cur.execute("""INSERT INTO pressures (index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%(text)s, %(text)s, %(text)s, %(text)s, %(text)s, %(text)s, %(text)s);""", (indexl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
+    #cur.execute("""INSERT INTO pressures (time) VALUES (%s);""", (timel,))
     db.commit()
 except psycopg2.DatabaseError, e:
     
@@ -75,7 +82,7 @@ except psycopg2.DatabaseError, e:
 finally:
     if db:
         db.close()
-
+#%%
 #works for one file, need to iterate over multiple
 """
 #for i in range(len(list_of_E)):
