@@ -8,6 +8,9 @@ Created on Wed Mar 15 09:14:27 2017
 #%%
 #import all .txt files from prismaflex data
 import glob
+import datetime
+import csv
+
 
 list_of_E = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*E.TXT')
 list_of_P = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*P.TXT')
@@ -25,9 +28,9 @@ try:
     cur = db.cursor()
     print "cursor success"
     cur.execute("DROP TABLE IF EXISTS events;")
-    cur.execute("CREATE TABLE events (patient_id text,index text, time text, class_cod text, class text, type_cod text, type text, sample_cod text, sample text, excessfluidlossgain text)")
+    cur.execute("CREATE TABLE events (patient_id INT, index INT, time timestamp, class_cod INT, class INT, type_cod INT, type INT, sample_cod INT, sample INT, excessfluidlossgain INT)")
     cur.execute("DROP TABLE IF EXISTS pressures;")
-    cur.execute("CREATE TABLE pressures (index text, time text, access_p text, filter_p text, effluent_p text, return_p text, arps text)")
+    cur.execute("CREATE TABLE pressures (index INT, time timestamp, access_p INT, filter_p INT, effluent_p INT, return_p INT, arps INT)")
     
     db.commit()
 except psycopg2.DatabaseError, e:
@@ -46,30 +49,34 @@ finally:
  #%%      
 #Load pressures into database        
 #need to strip spaces out of columns (strip out white space)
+from datetime import datetime
 try:
-    lines = open(list_of_P[0], 'rb')
-    readlines = lines.readlines()
-    #typesl = [x.lstrip() for x in readlines] 
-    types = [line.split(";") for line in readlines]
-    pressure_data = types[6:]
-    indexpl = [s[0] for s in pressure_data]
-    timel = [s[1] for s in pressure_data]
-    accesspl = [s[2] for s in pressure_data]
-    accesspl = [s.strip() for s in accesspl]
-    filterpl = [s[3] for s in pressure_data]
-    filterpl = [s.strip() for s in filterpl]
-    efflpl = [s[4] for s in pressure_data]
-    efflpl = [s.strip() for s in efflpl]
-    returnpl = [s[5] for s in pressure_data]
-    returnpl = [s.strip() for s in returnpl]
-    arpspl = [s[6] for s in pressure_data]
-    arpspl = [s.strip() for s in arpspl]
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
-    cur = db.cursor()        
-    cur.execute("""INSERT INTO pressures (index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%s, %s, %s, %s, %s, %s, %s);""", (indexl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
-    #cur.execute("""INSERT INTO pressures (time) VALUES (%s);""", (timel,))
+    cur = db.cursor()
+    
+    lines = open(list_of_P[0], 'rb').readlines()
+
+    pressure_data = csv.reader(lines, delimiter=';')
+    for index, row in enumerate(pressure_data):
+        if index < 6:
+            continue
+        else:
+            indexpl = int(row[0])
+            #timel = str(row[1]) #this needs to be a timestamp look at strftime and strptime
+            timel = datetime.strptime(row[1], '%c') #check to make sure format is correct
+            accesspl = int(row[2])
+            filterpl = int(row[3])
+            efflpl = int(row[4])
+            returnpl = int(row[5])
+            arpspl = int(row[6])
+           
+            cur.execute('INSERT INTO pressures (index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%s, %s, %s, %s, %s, %s, %s)', (indexpl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
+    
     db.commit()
+    
+    
+    
 except psycopg2.DatabaseError, e:
     
     if db:
@@ -82,7 +89,10 @@ except psycopg2.DatabaseError, e:
 finally:
     if db:
         db.close()
-#%%
+
+        
+
+        #%%
 #works for one file, need to iterate over multiple
 
 #for i in range(len(list_of_E)):
