@@ -10,6 +10,7 @@ Created on Wed Mar 15 09:14:27 2017
 import glob
 import datetime
 import csv
+import pandas
 from datetime import datetime
 
 
@@ -29,7 +30,7 @@ try:
     cur = db.cursor()
     print "cursor success"
     cur.execute("DROP TABLE IF EXISTS events;")
-    cur.execute("CREATE TABLE events (patient_id INT, index INT, time timestamp, class_cod INT, class INT, type_cod INT, type INT, sample_cod INT, sample INT, excessfluidlossgain INT)")
+    cur.execute("CREATE TABLE events (index INT, time timestamp, class_cod INT, class text, type_cod INT, type text, sample_cod INT, sample text, excessfluidlossgain text)")
     
     cur.execute("DROP TABLE IF EXISTS pressures;")
     cur.execute("CREATE TABLE pressures (index INT, time timestamp, access_p INT, filter_p INT, effluent_p INT, return_p INT, arps INT)")
@@ -99,15 +100,19 @@ finally:
 
         #%%
 #works for one file, need to iterate over multiple
-
+#Load Events into Database
+import codecs
 try:
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
     cur = db.cursor()
     
-    lines = open(list_of_E[0], 'rb').readlines()
-    index = 0;
-    event_data = csv.reader(lines, delimiter=';')
+    #lines = open(list_of_E[2], 'rb').readlines()
+    f=codecs.open(list_of_E[2],"rb","utf-16")
+    event_data = csv.reader(f,delimiter=';')
+    #event_data = csv.reader(lines, 'rb', delimiter=';')
+    
+    index = 0
     for index, row in enumerate(event_data):
         if index < 20:
             continue
@@ -116,17 +121,22 @@ try:
             #timel = str(row[1]) #this needs to be a timestamp look at strftime and strptime
             timeE = datetime.strptime(row[1], '%c') #check to make sure format is correct
             classcodE = int(row[2])
-            classE = (row[3])
+            classE = row[3]
             typecodE = int(row[4])
-            typeE = (row[5])
+            typeE = row[5]
             samplecodE = int(row[6])
-            sampleE = (row[7])
-            fluidE = (row[8])
+            sampleE = row[7]
+            if not sampleE:
+                sampleE = 'NaN'
+            fluidE = row[8]
+            if not fluidE:
+                fluidE = 'NaN'
            
-            cur.execute('INSERT INTO pressures (index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%s, %s, %s, %s, %s, %s, %s)', (indexpl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
+            cur.execute('INSERT INTO events (index, time, class_cod, class, type_cod, type, sample_cod, sample, excessfluidlossgain) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (indexE, timeE, classcodE, classE, typecodE, typeE,samplecodE, sampleE, fluidE))
     
     db.commit()
     
+    print 'Event data upload succesful'
     
     
 except psycopg2.DatabaseError, e:
@@ -141,7 +151,7 @@ except psycopg2.DatabaseError, e:
 finally:
     if db:
         db.close()
-
+"""
 #for i in range(len(list_of_E)):
 lines = open(list_of_E[0], 'rb')
 readlines = lines.readlines()
@@ -158,7 +168,7 @@ samplecodE = [s[6] for s in event_data]
 sampleE = [s[7] for s in event_data]
 fluidE = [s[8] for s in event_data]
 
-"""
+
 db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
 cur = db.cursor()
 cur.execute("INSERT INTO events (index) VALUES (%s);", (event_data)) 
@@ -198,6 +208,7 @@ try:
             cur.execute('INSERT INTO scales (indexS, timeS, runtimeS, postinfS, preinfS, dialysateS, effluentS, prebloodinfS, syringeinfS, excessfluidS, pumpone, pumptwo, pumpthree, pumpfour) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (indexS, timeS, runtimeS, postinfS, preinfS, dialysateS, effluentS, prebloodinfS, syringeinfS, excessfluidS, pumpone, pumptwo, pumpthree, pumpfour))
     
     db.commit()
+    print 'Scale Upload Succesful'
     
     
     
