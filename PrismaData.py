@@ -52,15 +52,15 @@ finally:
     
     if db:
         db.close()
-#%%
-#works for one file, need to iterate over multiple
+
+
 #Load Events into Database
 import codecs
 try:
-    lines = open(list_of_E[2], 'rb')
-    readlines = lines.readlines()
-    types = [line.split(";") for line in readlines]
-    calibration_data = types[:18]
+    #lines = open(list_of_E[2], 'rb')
+    #readlines = lines.readlines()
+    #types = [line.split(";") for line in readlines]
+    #calibration_data = types[:18]
     
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
@@ -100,7 +100,60 @@ try:
         
                 db.commit()
         print "Event data upload for ", list_of_E[counter], " succesful"
-    print 'Event data upload succesful'
+        #pressures
+        lines = open(list_of_P[counter], 'rb').readlines()
+    
+        pressure_data = csv.reader(lines, delimiter=';')
+        index = 0
+        for index, row in enumerate(pressure_data):
+            if index < 6:
+                continue
+            else:
+                indexpl = int(row[0])
+                #timel = str(row[1]) #this needs to be a timestamp look at strftime and strptime
+                timel = datetime.strptime(row[1], '%c') #check to make sure format is correct
+                accesspl = int(row[2])
+                filterpl = int(row[3])
+                efflpl = int(row[4])
+                returnpl = int(row[5])
+                arpspl = int(row[6])
+               
+                cur.execute('INSERT INTO pressures (patient_id, monitor_id, index, time, access_p, filter_p, effluent_p, return_p, arps) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (patient_id, monitor_id, indexpl, timel, accesspl, filterpl, efflpl, returnpl, arpspl))
+        
+            db.commit()
+        print "Pressure data upload for ", list_of_P[counter], " succesful"
+        
+        lines = open(list_of_S[counter], 'rb').readlines()
+        scale_data = csv.reader(lines, delimiter=';')
+        index = 0
+        for index, row in enumerate(scale_data):
+            if index < 6:
+                continue
+            else:
+                indexS = int(row[0])
+                #timel = str(row[1]) #this needs to be a timestamp look at strftime and strptime
+                timeS = datetime.strptime(row[1], '%c') #check to make sure format is correct
+                runtimeS = int(row[2])
+                postinfS = int(row[3])
+                preinfS = int(row[4])
+                dialysateS = int(row[5])
+                effluentS = int(row[6])
+                prebloodinfS = int(row[7])
+                syringeinfS = int(row[8])
+                excessfluidS = int(row[9])
+                pumpone = int(row[10])
+                pumptwo = int(row[11])
+                pumpthree = int(row[12])
+                pumpfour = int(row[13])
+               
+                cur.execute('INSERT INTO scales (patient_id, monitor_id, indexS, timeS, runtimeS, postinfS, preinfS, dialysateS, effluentS, prebloodinfS, syringeinfS, excessfluidS, pumpone, pumptwo, pumpthree, pumpfour) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (patient_id, monitor_id, indexS, timeS, runtimeS, postinfS, preinfS, dialysateS, effluentS, prebloodinfS, syringeinfS, excessfluidS, pumpone, pumptwo, pumpthree, pumpfour))
+        
+                db.commit()
+        print "Scale data upload for ", list_of_S[counter], " succesful"   
+ 
+  
+               
+    print 'Data upload succesful'
     
     
 except psycopg2.DatabaseError, e:
@@ -170,7 +223,6 @@ finally:
 
 #%%
 #Import scale files (S.txt) into PSQL database
-list_of_S = glob.glob('/Users/brysenkeith/workspace/prismaflex_data/*/*S.TXT')
 try:
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
