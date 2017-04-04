@@ -60,7 +60,7 @@ try:
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
     cur = db.cursor()
-    
+    for p file in list of p #set run id so that it iterates
     lines = open(list_of_P[0], 'rb').readlines()
 
     pressure_data = csv.reader(lines, delimiter=';')
@@ -96,24 +96,31 @@ finally:
     if db:
         db.close()
 
-        
+    #%%
 
-        #%%
+    
+
+ #%%
 #works for one file, need to iterate over multiple
 #Load Events into Database
 import codecs
 try:
+    lines = open(list_of_E[2], 'rb')
+    readlines = lines.readlines()
+    types = [line.split(";") for line in readlines]
+    calibration_data = types[:18]
+    
     db = None
     db = psycopg2.connect("dbname='crrt' user='brysenkeith' host='localhost' host='/tmp/'")
     cur = db.cursor()
     
-    #lines = open(list_of_E[2], 'rb').readlines()
     f=codecs.open(list_of_E[2],"rb","utf-16")
     event_data = csv.reader(f,delimiter=';')
-    #event_data = csv.reader(lines, 'rb', delimiter=';')
-    
     index = 0
     for index, row in enumerate(event_data):
+        if index == 0:
+            monitor = row
+            monitor_id = monitor[0][11:]
         if index < 20:
             continue
         else:
@@ -126,6 +133,8 @@ try:
             typeE = row[5]
             samplecodE = int(row[6])
             sampleE = row[7]
+            if index == 21:
+                patient_id = sampleE
             if not sampleE:
                 sampleE = 'NaN'
             fluidE = row[8]
